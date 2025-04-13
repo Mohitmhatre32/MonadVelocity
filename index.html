@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monad Velocity (Three.js UI)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Canvas where the Three.js scene will be rendered -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Heads-Up Display (HUD) Elements -->
+    <div id="hud">
+        <div id="speedometer">Speed: 0 km/h</div>
+        <div id="position">Position: 1 / N</div> <!-- Placeholder -->
+        <div id="lapCounter">Lap: 1 / 3</div>   <!-- Placeholder -->
+        <div id="message" class="hidden"></div> <!-- For game messages -->
+    </div>
+
+    <!-- Optional Loading Screen -->
+    <div id="loadingScreen">
+        <h1>Loading Monad Velocity...</h1>
+    </div>
+
+    <!-- Import the Three.js library -->
+    <!-- Using a Content Delivery Network (CDN) for simplicity -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Optional: Loader for 3D models like GLTF -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+    <!-- Import your game's JavaScript logic (uses Three.js) -->
+    <!-- type="module" allows using import/export -->
+    <script type="module" src="./main.js"></script>
+</body>
+</html>
