@@ -18,7 +18,7 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 3000;
 
 // In-memory storage for player data
-// Key: socket.id, Value: { id: socket.id, position: {x,y,z}, rotation: {x,y,z,w} }
+// Key: socket.id, Value: { id: socket.id, position: {x,y,z}, rotation: {x,y,z,w}, lapCount: 0 }
 let players = {};
 
 // --- Socket.IO Event Handling ---
@@ -26,19 +26,17 @@ let players = {};
 io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);
 
-    // 1. Create a new player entry with quaternion rotation
+    // 1. Create a new player entry with quaternion rotation and lap count
     players[socket.id] = {
         id: socket.id,
         position: { x: 0, y: 0.5, z: 55 }, // Match frontend starting Z pos for consistency
         rotation: { x: 0, y: 0, z: 0, w: 1 }, // Default rotation (Identity Quaternion - facing Z+)
-        // You could add other initial state like color, car model later
-        // model: 'default',
-        // color: Math.random() * 0xffffff // Example: Assign random color
+        lapCount: 0 // Initialize lap count
     };
     console.log('Current players:', Object.keys(players).length);
 
     // 2. Send the list of *already connected* players to the *new* player
-    // Includes their positions and rotations.
+    // Includes their positions, rotations, and lap counts
     socket.emit('currentPlayers', players);
 
     // 3. Announce the *new* player (with full state) to *all other* existing players
@@ -50,22 +48,39 @@ io.on('connection', (socket) => {
         if (players[socket.id] && playerData.position && playerData.rotation) {
             // Update the player's data on the server, including the full quaternion
             players[socket.id] = {
-                ...players[socket.id], // Keep existing data like ID, color etc.
+                ...players[socket.id], // Keep existing data like ID, lapCount, etc.
                 position: playerData.position,
-                rotation: playerData.rotation, // Store the {x, y, z, w} object
-                // Include other state if sent (e.g., speed for backend logic/validation)
-                // speed: playerData.speed
+                rotation: playerData.rotation // Store the {x, y, z, w} object
             };
 
             // Broadcast the updated data (including full rotation) to *all other* players
             socket.broadcast.emit('opponentUpdate', players[socket.id]);
         } else {
             console.warn(`Received incomplete or invalid update for player: ${socket.id}`, playerData);
-            // Could request the client to re-register or handle error
         }
     });
 
-    // 5. Handle player disconnect
+    // 5. Handle lap completion
+    socket.on('lapCompleted', (data) => {
+        if (players[socket.id] && data.lapCount) {
+            // Basic validation: Ensure lapCount is sequential to prevent cheating
+            if (data.lapCount === players[socket.id].lapCount + 1) {
+                players[socket.id].lapCount = data.lapCount;
+                console.log(`Player ${socket.id} completed lap ${players[socket.id].lapCount}`);
+                // Broadcast to all other players
+                socket.broadcast.emit('lapCompleted', { id: socket.id, lapCount: players[socket.id].lapCount });
+                // Check for winning condition (3 laps)
+                if (players[socket.id].lapCount >= 3) {
+                    console.log(`Player ${socket.id} wins!`);
+                    io.emit('playerWon', { id: socket.id });
+                }
+            } else {
+                console.warn(`Invalid lap count update from player ${socket.id}: expected ${players[socket.id].lapCount + 1}, got ${data.lapCount}`);
+            }
+        }
+    });
+
+    // 6. Handle player disconnect
     socket.on('disconnect', () => {
         console.log(`User disconnected: ${socket.id}`);
         // Remove player from the server state
@@ -74,11 +89,6 @@ io.on('connection', (socket) => {
         io.emit('playerDisconnected', socket.id); // Send the ID of the disconnected player
         console.log('Current players:', Object.keys(players).length);
     });
-
-    // --- Add other game-specific events here ---
-    // e.g., socket.on('requestRespawn', () => { /* ... logic to reset player position ... */ });
-    // e.g., socket.on('finishedLap', (lapTime) => { /* ... record lap time ... */ });
-
 });
 
 // Basic HTTP route (optional, useful for health checks)
