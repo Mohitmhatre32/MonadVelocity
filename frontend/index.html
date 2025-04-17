@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monad Velocity (Three.js UI)</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <!-- Canvas where the Three.js scene will be rendered -->
     <canvas id="gameCanvas"></canvas>
@@ -23,25 +25,25 @@
         <h1>Loading Assets...</h1>
     </div>
 
-<!-- Room Selection Popup -->
-<div id="roomSelectionPopup" class="popup">
-    <div class="popup-content">
-        <h2>Welcome to Monad Velocity</h2>
-        <input type="text" id="playerName" placeholder="Enter Your Name" />
-        <button id="createRaceButton">Create New Race</button>
-        <button id="joinRaceButton">Join Existing Race</button>
+    <!-- Room Selection Popup -->
+    <div id="roomSelectionPopup" class="popup">
+        <div class="popup-content">
+            <h2>Welcome to Monad Velocity</h2>
+            <input type="text" id="playerName" placeholder="Enter Your Name" />
+            <button id="createRaceButton">Create New Race</button>
+            <button id="joinRaceButton">Join Existing Race</button>
+        </div>
     </div>
-</div>
 
-<!-- Join Race Popup -->
-<div id="joinRacePopup" class="popup hidden">
-    <div class="popup-content">
-        <h2>Join Existing Race</h2>
-        <input type="text" id="roomCodeInput" placeholder="Enter Room Code" />
-        <button id="joinButton">Join</button>
-        <div id="joinError"></div>
+    <!-- Join Race Popup -->
+    <div id="joinRacePopup" class="popup hidden">
+        <div class="popup-content">
+            <h2>Join Existing Race</h2>
+            <input type="text" id="roomCodeInput" placeholder="Enter Room Code" />
+            <button id="joinButton">Join</button>
+            <div id="joinError"></div>
+        </div>
     </div>
-</div>
 
 
     <!-- Waiting Popup -->
@@ -71,4 +73,5 @@
     <!-- Import Game Logic -->
     <script type="module" src="./main.js"></script>
 </body>
+
 </html>
