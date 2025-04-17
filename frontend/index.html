@@ -13,28 +13,62 @@
     <!-- Heads-Up Display (HUD) Elements -->
     <div id="hud">
         <div id="speedometer">Speed: 0 km/h</div>
-        <div id="position">Position: 1 / N</div> <!-- Placeholder -->
-        <div id="lapCounter">Lap: 1 / 3</div>   <!-- Placeholder -->
-        <div id="message" class="hidden"></div> <!-- For game messages -->
+        <div id="position">Position: 1 / N</div>
+        <div id="lapCounter">Lap: 1 / 3</div>
+        <div id="message" class="hidden"></div>
     </div>
 
-    <!-- Optional Loading Screen -->
-    <div id="loadingScreen">
-        <h1>Loading Monad Velocity...</h1>
+    <!-- Initial Loading Screen -->
+    <div id="loadingScreen" class="hidden">
+        <h1>Loading Assets...</h1>
     </div>
 
-    <!-- Import the Three.js library -->
-    <!-- Using a Content Delivery Network (CDN) for simplicity -->
+<!-- Room Selection Popup -->
+<div id="roomSelectionPopup" class="popup">
+    <div class="popup-content">
+        <h2>Welcome to Monad Velocity</h2>
+        <input type="text" id="playerName" placeholder="Enter Your Name" />
+        <button id="createRaceButton">Create New Race</button>
+        <button id="joinRaceButton">Join Existing Race</button>
+    </div>
+</div>
+
+<!-- Join Race Popup -->
+<div id="joinRacePopup" class="popup hidden">
+    <div class="popup-content">
+        <h2>Join Existing Race</h2>
+        <input type="text" id="roomCodeInput" placeholder="Enter Room Code" />
+        <button id="joinButton">Join</button>
+        <div id="joinError"></div>
+    </div>
+</div>
+
+
+    <!-- Waiting Popup -->
+    <div id="waitingPopup" class="popup hidden">
+        <div class="popup-content">
+            <h2>Room Code: <span id="roomCodeDisplay"></span></h2>
+            <p>Waiting for race to start...</p>
+        </div>
+    </div>
+
+    <!-- Post-Race Completion Popup -->
+    <div id="postRacePopup" class="popup hidden">
+        <div class="popup-content">
+            <h2 id="raceResultTitle">Race Finished!</h2>
+            <p id="raceResultMessage">Congratulations!</p>
+            <button id="newRaceButton">New Race</button>
+        </div>
+    </div>
+
+    <!-- Import Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- Optional: Loader for 3D models like GLTF -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.136.0/examples/js/loaders/RGBELoader.js"></script>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <script src="
-https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.min.js
-" type="module"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.min.js" type="module"></script>
 
-    <!-- Import your game's JavaScript logic (uses Three.js) -->
-    <!-- type="module" allows using import/export -->
+    <!-- Import Game Logic -->
     <script type="module" src="./main.js"></script>
 </body>
 </html>

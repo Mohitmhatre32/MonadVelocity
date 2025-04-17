@@ -1,93 +1,184 @@
+/* Base Styles */
 body {
     margin: 0;
-    overflow: hidden; /* Prevent scrollbars */
-    background-color: #222;
-    color: white;
-    font-family: 'Arial', sans-serif;
+    overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #000010 0%, #000014 100%);
+    color: #fff;
 }
 
-/* Make the canvas fill the entire window */
+/* Canvas */
 #gameCanvas {
-    display: block;
     width: 100vw;
     height: 100vh;
+    display: block;
+    z-index: 1;
 }
 
-/* Style the HUD overlay */
+/* HUD */
 #hud {
-    position: absolute; /* Position over the canvas */
-    bottom: 20px;
-    left: 20px;
-    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background */
-    padding: 15px;
-    border-radius: 8px;
-    color: #eee;
-    font-size: 1.2em;
-    min-width: 200px;
-    z-index: 10; /* Ensure HUD is on top */
+    position: absolute;
+    bottom: 30px;
+    left: 30px;
+    padding: 20px 25px;
+    font-size: 1.1em;
+    z-index: 10;
+    color: #e0f0ff;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 200, 255, 0.3);
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0, 200, 255, 0.2);
 }
 
 #hud div {
-    margin-bottom: 5px;
+    margin-bottom: 10px;
 }
 
 #speedometer {
     font-weight: bold;
-    color: #4CAF50; /* Green color for speed */
+    color: #e9eff4;
+    text-shadow: 0 0 10px #00bfff;
 }
 
-/* Style for in-game messages */
+/* In-game Message */
 #message {
     position: absolute;
-    top: 30%;
+    top: 25%;
     left: 50%;
     transform: translate(-50%, -50%);
     font-size: 2.5em;
-    padding: 20px;
-    background-color: rgba(255, 0, 0, 0.7);
-    border-radius: 10px;
+    padding: 25px 40px;
     text-align: center;
+    color: #fff;
     z-index: 20;
+    border-radius: 15px;
+    background: rgba(255, 0, 85, 0.7);
+    box-shadow: 0 0 30px rgba(255, 0, 85, 0.6);
     transition: opacity 0.5s ease-out;
 }
 
 #message.hidden {
     opacity: 0;
-    pointer-events: none; /* Allow clicking through when hidden */
+    pointer-events: none;
 }
 
-/* Style for the loading screen */
+/* Loading Screen */
 #loadingScreen {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #111;
-    display: flex; /* Use flexbox for centering */
-    flex-direction: column;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 100;
+    display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 100; /* Ensure it's above everything initially */
-    color: white;
-    font-size: 1.5em;
+    flex-direction: column;
+    background: linear-gradient(135deg, #060616 0%, #0a0a1a 100%);
+    color: #ffffff;
+    font-size: 1.8em;
+    font-weight: bold;
+    text-shadow: 0 0 15px rgba(0, 150, 255, 0.5);
 }
 
-.message {
-    position: absolute;
-    top: 70px; /* Adjust as needed */
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 10px 20px;
-    border-radius: 5px;
-    color: white;
-    font-size: 1.2em;
-    z-index: 100;
+/* Hidden Utility Class */
+.hidden {
+    display: none !important;
+}
+
+/* Popup Overlay */
+.popup {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 30, 0.75);
+    backdrop-filter: blur(6px);
+    transition: opacity 0.3s ease-in-out;
+}
+
+.popup.hidden {
+    display: none;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Popup Content */
+.popup-content {
+    max-width: 460px;
+    padding: 40px;
     text-align: center;
-    transition: opacity 0.5s ease-out;
-    opacity: 1;
- }
- .message.info { background-color: rgba(0, 150, 50, 0.8); }
- .message.error { background-color: rgba(255, 0, 0, 0.8); }
- .message.hidden { opacity: 0; pointer-events: none; }
- .message.permanent { /* Style for non-fading messages if needed */ }
+    color: #ffffff;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 0, 0, 0.2);
+    box-shadow:
+        0 0 25px rgba(0, 0, 255, 0.3),
+        0 0 15px rgba(255, 0, 90, 0.3);
+}
+
+.popup h2 {
+    font-size: 2em;
+    margin-bottom: 20px;
+    color: #00aaff;
+    text-shadow: 0 0 10px #00aaff;
+}
+
+.popup p {
+    margin: 15px 0;
+}
+
+/* Input Fields */
+input[type="text"] {
+    display: block;
+    width: 90%;
+    max-width: 300px;
+    padding: 12px;
+    margin: 10px auto;
+    font-size: 1em;
+    text-align: center;
+    border-radius: 8px;
+    border: none;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 12px rgba(0, 153, 255, 0.3);
+    transition: box-shadow 0.3s ease;
+}
+
+input[type="text"]:focus {
+    outline: none;
+    box-shadow: 0 0 15px rgba(255, 0, 85, 0.5);
+}
+
+/* Buttons */
+.popup button {
+    margin-top: 10px;
+    padding: 12px 25px;
+    font-size: 1em;
+    font-weight: bold;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    background: linear-gradient(145deg, #ff003c, #0066ff);
+    box-shadow:
+        0 0 15px rgba(255, 0, 85, 0.5),
+        0 0 15px rgba(0, 102, 255, 0.4);
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.popup button:hover {
+    transform: scale(1.05);
+    background: linear-gradient(145deg, #d9002e, #0052cc);
+}
+
+/* Error Message */
+#joinError {
+    margin-top: 10px;
+    font-weight: bold;
+    color: #ff4d4d;
+    text-shadow: 0 0 8px #ff4d4d;
+}
