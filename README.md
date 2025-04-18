@@ -26,63 +26,157 @@ This project aims to showcase the power of Monad for interactive, on-chain games
 * **Database:** FireBase
 * **Asset Management:** IPFS (InterPlanetary File System)
 
-## Getting Started (Development)
+## Project Structure
 
-1.  **Prerequisites:**
-    * Node.js and npm (or yarn) installed.
-    * A Monad development environment set up (refer to Monad's official documentation).
-    * Metamask or a compatible Web3 wallet.
+```
+MonadVelocity/
+├── contracts/           # Smart contracts
+│   ├── CarNFT.sol       # ERC-721 contract for cars
+│   ├── GameToken.sol    # ERC-20 contract for in-game currency
+│   ├── RaceRegistry.sol # Contract for race results
+│   ├── deploy.js        # Deployment script
+│   └── package.json     # Contract dependencies
+├── frontend/            # Game frontend
+│   ├── index.html       # Main HTML file
+│   ├── main.js          # Game logic
+│   ├── web3.js          # Web3 integration
+│   ├── style.css        # Styling
+│   └── package.json     # Frontend dependencies
+├── ipfs/                # IPFS integration
+│   ├── ipfsService.js   # IPFS service
+│   └── mintNFT.js       # NFT minting script
+├── scripts/             # Utility scripts
+│   └── update-frontend.js # Script to update frontend with contract addresses
+├── abi/                 # Contract ABIs (generated after deployment)
+├── deployments/         # Deployment information (generated after deployment)
+├── hardhat.config.js    # Hardhat configuration
+└── README.md            # This file
+```
 
-2.  **Clone the Repository:**
-    ```bash
-    git clone [YOUR_REPOSITORY_URL]
-    cd monad-velocity
-    ```
+## Prerequisites
 
-3.  **Install Dependencies (Frontend):**
-    ```bash
-    cd frontend
-    npm install
-    # or
-    yarn install
-    ```
+- Node.js (v14 or higher)
+- npm or yarn
+- MetaMask or another Web3 wallet
+- Infura IPFS account (for NFT metadata storage)
 
-4.  **Install Dependencies (Backend):**
-    ```bash
-    cd backend
-    npm install
-    # or
-    yarn install
-    ```
+## Setup
 
-5.  **Smart Contract Deployment:**
-    * Navigate to the `contracts` directory.
-    * Compile and deploy the Solidity smart contracts to the Monad testnet (or local Monad node) using a deployment script (e.g., using Hardhat or Foundry).
-    * Update the contract addresses in the frontend and backend configurations.
+### 1. Install Dependencies
 
-6.  **Backend Configuration:**
-    * Configure the database connection and other backend settings in the `.env` file or configuration files.
+```bash
+# Install contract dependencies
+cd contracts
+npm install
 
-7.  **Run the Backend Server:**
-    ```bash
-    cd backend
-    npm run dev
-    # or
-    yarn dev
-    ```
+# Install frontend dependencies
+cd ../frontend
+npm install
 
-8.  **Run the Frontend Application:**
-    ```bash
-    cd frontend
-    npm start
-    # or
-    yarn start
-    ```
+# Install IPFS dependencies
+cd ../ipfs
+npm install
+```
 
-9.  **Connect with Your Wallet:**
-    * Open the frontend application in your browser.
-    * Connect your Web3 wallet (e.g., Metamask) to interact with the Monad blockchain.
+### 2. Configure Environment Variables
 
+Create a `.env` file in the root directory with the following variables:
+
+```
+# Monad Velocity Smart Contract Addresses
+CAR_NFT_ADDRESS=
+GAME_TOKEN_ADDRESS=
+RACE_REGISTRY_ADDRESS=
+
+# Network Configuration
+MONAD_RPC_URL=https://rpc.monad.xyz
+
+# Wallet Configuration
+PRIVATE_KEY=your_private_key_here
+OWNER_ADDRESS=your_wallet_address_here
+
+# IPFS Configuration
+INFURA_IPFS_PROJECT_ID=your_infura_ipfs_project_id
+INFURA_IPFS_PROJECT_SECRET=your_infura_ipfs_project_secret
+```
+
+### 3. Deploy Smart Contracts
+
+```bash
+cd contracts
+npx hardhat compile
+npx hardhat run deploy.js --network monadTestnet
+```
+
+### 4. Update Frontend with Contract Addresses
+
+```bash
+node scripts/update-frontend.js
+```
+
+### 5. Mint NFTs
+
+```bash
+cd ipfs
+node mintNFT.js
+```
+
+### 6. Start the Game
+
+```bash
+cd frontend
+npm start
+```
+
+## Smart Contracts
+
+### CarNFT (ERC-721)
+
+Represents cars in the game as NFTs. Each car has attributes like speed, handling, and acceleration.
+
+### GameToken (ERC-20)
+
+The in-game currency used for transactions, rewards, and race entry fees.
+
+### RaceRegistry
+
+Records race results on the blockchain and manages leaderboards.
+
+## IPFS Integration
+
+NFT metadata (car images, 3D models, attributes) is stored on IPFS using Infura's IPFS service.
+
+## Web3 Integration
+
+The frontend uses ethers.js to interact with the Monad blockchain and the user's wallet.
+
+## Development
+
+### Compile Contracts
+
+```bash
+cd contracts
+npx hardhat compile
+```
+
+### Run Tests
+
+```bash
+cd contracts
+npx hardhat test
+```
+
+### Deploy to Local Network
+
+```bash
+cd contracts
+npx hardhat node
+npx hardhat run deploy.js --network localhost
+```
+
+## License
+
+MIT
 
 ## Team
 

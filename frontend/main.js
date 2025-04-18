@@ -1,9 +1,9 @@
 //main.js
 if (typeof THREE === "undefined") {
-  console.error("THREE.js library not loaded. Check script tag in index.html.");
+    console.error("THREE.js library not loaded. Check script tag in index.html.");
   document.getElementById("loadingScreen").innerHTML =
     "<h1>Error: Could not load 3D library!</h1>";
-  throw new Error("THREE.js not loaded");
+    throw new Error("THREE.js not loaded");
 }
 if (typeof io === "undefined") {
   console.error(
@@ -11,7 +11,7 @@ if (typeof io === "undefined") {
   );
   document.getElementById("loadingScreen").innerHTML =
     "<h1>Error: Could not load networking library!</h1>";
-  throw new Error("Socket.IO client not loaded");
+    throw new Error("Socket.IO client not loaded");
 }
 
 // --- Basic Three.js Scene Setup ---
@@ -71,6 +71,27 @@ const loadingScreen = document.getElementById("loadingScreen");
 let socket;
 let myId = null;
 
+
+
+// Add Web3 UI elements
+const walletButton = document.createElement('button');
+walletButton.id = 'walletButton';
+walletButton.textContent = 'Connect Wallet';
+walletButton.style.position = 'absolute';
+walletButton.style.top = '10px';
+walletButton.style.right = '10px';
+walletButton.style.zIndex = '1000';
+document.body.appendChild(walletButton);
+
+const tokenBalanceElement = document.createElement('div');
+tokenBalanceElement.id = 'tokenBalance';
+tokenBalanceElement.style.position = 'absolute';
+tokenBalanceElement.style.top = '50px';
+tokenBalanceElement.style.right = '10px';
+tokenBalanceElement.style.zIndex = '1000';
+tokenBalanceElement.style.color = 'white';
+document.body.appendChild(tokenBalanceElement);
+
 // --- Initialization Function ---
 // Add global variables for grass data
 let grassData = null;
@@ -105,34 +126,131 @@ function getStartingPosition(carIndex, trackCurve, trackWidth) {
     return { position: position, rotationY: rotationY };
 }
 
+// Add Web3 loading state
+let isWeb3Loading = false;
+let web3Error = null;
+
+// Add Web3 cleanup function
+function cleanupWeb3() {
+    if (window.ethereum) {
+        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+        window.ethereum.removeListener('chainChanged', handleChainChanged);
+    }
+    web3Instance = null;
+    carNFTContract = null;
+    gameTokenContract = null;
+    raceRegistryContract = null;
+    isWalletConnected = false;
+    playerNFTs = [];
+    playerTokenBalance = '0';
+}
+
+// Update Web3 initialization with loading state
+async function initializeWeb3() {
+    if (isWeb3Loading) return;
+    isWeb3Loading = true;
+    web3Error = null;
+    updateLoadingProgress('Connecting to Web3...', 0.3);
+
+    try {
+        if (typeof window.ethereum === 'undefined') {
+            throw new Error('MetaMask is not installed');
+        }
+
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (accounts.length === 0) {
+            throw new Error('No accounts found');
+        }
+
+        web3Instance = new Web3(window.ethereum);
+        
+        updateLoadingProgress('Initializing contracts...', 0.5);
+        
+        carNFTContract = new web3Instance.eth.Contract(CAR_NFT_ABI, CAR_NFT_ADDRESS);
+        gameTokenContract = new web3Instance.eth.Contract(GAME_TOKEN_ABI, GAME_TOKEN_ADDRESS);
+        raceRegistryContract = new web3Instance.eth.Contract(RACE_REGISTRY_ABI, RACE_REGISTRY_ADDRESS);
+
+        window.ethereum.on('accountsChanged', handleAccountsChanged);
+        window.ethereum.on('chainChanged', handleChainChanged);
+
+        updateLoadingProgress('Loading NFT data...', 0.7);
+        await loadPlayerNFTs();
+        
+        updateLoadingProgress('Loading token balance...', 0.9);
+        await loadTokenBalance();
+        
+        isWalletConnected = true;
+        updateWalletUI();
+        showMessage('Wallet connected successfully!', 3000);
+        updateLoadingProgress('Web3 initialization complete', 1.0);
+    } catch (error) {
+        console.error('Web3 initialization error:', error);
+        web3Error = error;
+        showMessage('Failed to connect wallet: ' + error.message, 5000, true);
+        updateLoadingProgress('Web3 initialization failed', 0);
+    } finally {
+        isWeb3Loading = false;
+    }
+}
+
+// Add loading progress update function
+function updateLoadingProgress(message, progress) {
+    const loadingScreen = document.getElementById('loadingScreen');
+    const loadingProgress = document.getElementById('loadingProgress');
+    if (loadingScreen && loadingProgress) {
+        loadingProgress.style.width = `${progress * 100}%`;
+        loadingProgress.textContent = message;
+    }
+}
+
+// Update init function to handle Web3 failures gracefully
 async function init() {
     console.log("Initializing Monad Velocity UI...");
+    try {
     setupScene();
     setupSkybox();
     setupLighting();
     createGround();
     createTrack();
-    await preloadFoliageTextures();
+        await preloadFoliageTextures();
     addFoliage();
-    await preloadGrassTexture();
-    grassData = addGrass();
-    await loadCarAssets(); // Load car models and textures
+        await preloadGrassTexture();
+        grassData = addGrass();
+        await loadCarAssets();
     setupCamera();
-    setupControls(); // Only sets up event listeners now
+    setupControls();
     setupSocketIO();
+        
+        // Try to initialize Web3 but don't block game initialization
+        try {
+            await initializeWeb3();
+        } catch (error) {
+            console.warn('Web3 initialization failed, continuing without blockchain features:', error);
+        }
+        
     loadingScreen.style.display = 'none';
-    showMessage("Connecting to server...", 0);
-    console.log("Initialization base complete. Waiting for server connection...");
+        showMessage("Game initialized successfully!", 0);
+        console.log("Initialization complete.");
     animate();
+    } catch (error) {
+        console.error('Game initialization failed:', error);
+        showMessage("Failed to initialize game: " + error.message, 0, true);
+        loadingScreen.innerHTML = `<h1>Error: ${error.message}</h1>`;
+    }
 }
+
+// Add cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    cleanupWeb3();
+});
 
 // --- Skybox Setup ---
 function setupSkybox() {
-  const loader = new THREE.TextureLoader();
+    const loader = new THREE.TextureLoader();
   const skyTexture = loader.load("media/seamless-sky-texture_739292-23602.jpg");
-  skyTexture.mapping = THREE.EquirectangularReflectionMapping;
-  scene.background = skyTexture;
-  scene.environment = skyTexture;
+    skyTexture.mapping = THREE.EquirectangularReflectionMapping;
+    scene.background = skyTexture;
+    scene.environment = skyTexture;
 }
 
 // --- Socket.IO Setup ---
@@ -141,45 +259,45 @@ function setupSocketIO() {
 
 socket.on("connect", () => {
     console.log("Successfully connected to server! My ID:", socket.id);
-    myId = socket.id;
-    showMessage(`Connected! ID: ${myId}`, 3000);
-    // Don’t create playerCar here—it will happen after currentPlayers
+        myId = socket.id;
+        showMessage(`Connected! ID: ${myId}`, 3000);
+    // Don't create playerCar here—it will happen after currentPlayers
 });
 
   socket.on("disconnect", (reason) => {
-    console.log(`Disconnected from server: ${reason}`);
-    myId = null;
-    if (playerCar) {
-      scene.remove(playerCar);
-      playerCar = null;
-    }
-    for (const id in opponentCars) {
-      removeOpponent(id);
-    }
-    positionElement.textContent = `Position: - / -`;
-    speedometerElement.textContent = `Speed: 0 km/h`;
-    showMessage(`Disconnected: ${reason}`, 5000, true);
-  });
+        console.log(`Disconnected from server: ${reason}`);
+        myId = null;
+        if (playerCar) {
+            scene.remove(playerCar);
+            playerCar = null;
+        }
+        for (const id in opponentCars) {
+            removeOpponent(id);
+        }
+        positionElement.textContent = `Position: - / -`;
+        speedometerElement.textContent = `Speed: 0 km/h`;
+        showMessage(`Disconnected: ${reason}`, 5000, true);
+    });
 
   socket.on("connect_error", (error) => {
     console.error("Connection error:", error);
-    showMessage("Could not connect to server", 5000, true);
-  });
+        showMessage("Could not connect to server", 5000, true);
+    });
 
 socket.on("currentPlayers", (playersData) => {
-    if (!myId) return;
+        if (!myId) return;
     console.log("Receiving current players:", playersData);
 
     // Clear any existing opponent cars
-    for (const id in opponentCars) {
-        removeOpponent(id);
-    }
+        for (const id in opponentCars) {
+            removeOpponent(id);
+        }
 
     const trackData = trackMesh.userData;
 
     // Add existing players to opponentCars
-    for (const id in playersData) {
-        if (id !== myId) {
+        for (const id in playersData) {
+            if (id !== myId) {
             const car = createCar('red', id);
             if (playersData[id].position) {
                 car.position.set(
@@ -213,8 +331,8 @@ socket.on("currentPlayers", (playersData) => {
     // Mark existing players as loaded and create playerCar
     existingPlayersLoaded = true;
     createPlayerCar();
-    updateHUDPosition();
-});
+        updateHUDPosition();
+    });
 
   socket.on("newPlayer", (playerData) => {
     if (!myId || playerData.id === myId) {
@@ -222,64 +340,64 @@ socket.on("currentPlayers", (playersData) => {
         return;
     }
     console.log("New player joined:", playerData);
-    addOpponent(playerData);
-    updateHUDPosition();
-});
+        addOpponent(playerData);
+        updateHUDPosition();
+    });
 
   socket.on("opponentUpdate", (playerData) => {
-    if (!myId || playerData.id === myId) return;
-    const opponentCar = opponentCars[playerData.id];
-    if (opponentCar) {
+        if (!myId || playerData.id === myId) return;
+        const opponentCar = opponentCars[playerData.id];
+        if (opponentCar) {
       if (playerData.position && typeof playerData.position.x === "number") {
         const targetPos = new THREE.Vector3(
           playerData.position.x,
           playerData.position.y,
           playerData.position.z
         );
-        opponentCar.position.lerp(targetPos, INTERPOLATION_FACTOR);
-      }
+                opponentCar.position.lerp(targetPos, INTERPOLATION_FACTOR);
+            }
       if (playerData.rotation && typeof playerData.rotation.w === "number") {
-        const targetQuat = new THREE.Quaternion(
-          playerData.rotation.x,
-          playerData.rotation.y,
-          playerData.rotation.z,
-          playerData.rotation.w
-        );
+                const targetQuat = new THREE.Quaternion(
+                    playerData.rotation.x,
+                    playerData.rotation.y,
+                    playerData.rotation.z,
+                    playerData.rotation.w
+                );
         if (
           !isNaN(targetQuat.x) &&
           !isNaN(targetQuat.y) &&
           !isNaN(targetQuat.z) &&
           !isNaN(targetQuat.w)
         ) {
-          opponentCar.quaternion.slerp(targetQuat, INTERPOLATION_FACTOR);
-        }
-      }
-    } else {
+                    opponentCar.quaternion.slerp(targetQuat, INTERPOLATION_FACTOR);
+                }
+            }
+        } else {
       console.warn(
         `Received update for unknown opponent ${playerData.id}. Adding.`
       );
-      addOpponent(playerData);
-      updateHUDPosition();
-    }
-  });
+            addOpponent(playerData);
+            updateHUDPosition();
+        }
+    });
 
   socket.on("playerDisconnected", (playerId) => {
     console.log("Player disconnected:", playerId);
-    removeOpponent(playerId);
-    updateHUDPosition();
-  });
+        removeOpponent(playerId);
+        updateHUDPosition();
+    });
 
   socket.on("lapCompleted", (data) => {
-    if (data.id !== myId && opponentCars[data.id]) {
-      opponentCars[data.id].userData.lapCount = data.lapCount;
-      console.log(`Opponent ${data.id} completed lap ${data.lapCount}`);
-    }
-  });
+        if (data.id !== myId && opponentCars[data.id]) {
+            opponentCars[data.id].userData.lapCount = data.lapCount;
+            console.log(`Opponent ${data.id} completed lap ${data.lapCount}`);
+        }
+    });
 
   socket.on("playerWon", (data) => {
-    if (data.id === myId) return;
-    showMessage(`Player ${data.id} wins!`, 5000);
-  });
+        if (data.id === myId) return;
+        showMessage(`Player ${data.id} wins!`, 5000);
+    });
 }
 
 function createPlayerCar() {
@@ -362,11 +480,11 @@ function addOpponent(playerData) {
 }
 
 function removeOpponent(playerId) {
-  if (opponentCars[playerId]) {
-    scene.remove(opponentCars[playerId]);
-    delete opponentCars[playerId];
-    console.log(`Removed opponent car: ${playerId}`);
-  }
+    if (opponentCars[playerId]) {
+        scene.remove(opponentCars[playerId]);
+        delete opponentCars[playerId];
+        console.log(`Removed opponent car: ${playerId}`);
+    }
 }
 
 // --- Three.js Scene Configuration ---
@@ -406,18 +524,18 @@ function setupLighting() {
 }
 
 function createGround() {
-  const groundGeometry = new THREE.PlaneGeometry(8000, 8000);
-  const groundMaterial = new THREE.MeshStandardMaterial({
+    const groundGeometry = new THREE.PlaneGeometry(8000, 8000);
+    const groundMaterial = new THREE.MeshStandardMaterial({
     map: new THREE.TextureLoader().load("media/grass/texture.jpg"),
-    roughness: 0.9,
+        roughness: 0.9,
     metalness: 0.1,
-  });
+    });
   groundMaterial.map.repeat.set(3000, 3000);
-  groundMaterial.map.wrapS = groundMaterial.map.wrapT = THREE.RepeatWrapping;
-  groundPlane = new THREE.Mesh(groundGeometry, groundMaterial);
-  groundPlane.rotation.x = -Math.PI / 2;
-  groundPlane.receiveShadow = true;
-  scene.add(groundPlane);
+    groundMaterial.map.wrapS = groundMaterial.map.wrapT = THREE.RepeatWrapping;
+    groundPlane = new THREE.Mesh(groundGeometry, groundMaterial);
+    groundPlane.rotation.x = -Math.PI / 2;
+    groundPlane.receiveShadow = true;
+    scene.add(groundPlane);
 }
 
 /**
@@ -619,7 +737,7 @@ function createTrack() {
 }
 
 // --- Foliage Optimization ---
-const foliageTextures = [
+    const foliageTextures = [
   "media/my_trees_1/1.png",
   "media/my_trees_1/2.png",
   "media/my_trees_1/3.png",
@@ -1166,8 +1284,8 @@ function createCar(color, id) {
 }
 // --- Camera Setup and Control ---
 function setupCamera() {
-  camera.position.set(0, 50, 80);
-  camera.lookAt(scene.position);
+    camera.position.set(0, 50, 80);
+    camera.lookAt(scene.position);
 }
 
 function updateCamera() {
@@ -1203,11 +1321,11 @@ function setupControls() {
 }
 
 function handleControls(deltaTime) {
-  if (!playerCar || !socket || !myId || !socket.connected) return;
+    if (!playerCar || !socket || !myId || !socket.connected) return;
 
-  let speedChanged = false;
-  let rotationChanged = false;
-  const oldSpeed = playerSpeed;
+    let speedChanged = false;
+    let rotationChanged = false;
+    const oldSpeed = playerSpeed;
 
   if (keyboard["ArrowUp"] || keyboard["KeyW"]) {
     playerSpeed += acceleration;
@@ -1223,65 +1341,65 @@ function handleControls(deltaTime) {
       playerSpeed = Math.min(0, playerSpeed + deceleration);
       speedChanged = true;
     }
-  }
-  playerSpeed = Math.max(-maxSpeed / 2, Math.min(maxSpeed, playerSpeed));
-  if (Math.abs(playerSpeed - oldSpeed) < 0.001) speedChanged = false;
+    }
+    playerSpeed = Math.max(-maxSpeed / 2, Math.min(maxSpeed, playerSpeed));
+    if (Math.abs(playerSpeed - oldSpeed) < 0.001) speedChanged = false;
 
-  let turnFactor = 0;
-  if (Math.abs(playerSpeed) > 0.05) {
+    let turnFactor = 0;
+    if (Math.abs(playerSpeed) > 0.05) {
     if (keyboard["ArrowLeft"] || keyboard["KeyA"]) turnFactor = 1;
     if (keyboard["ArrowRight"] || keyboard["KeyD"]) turnFactor = -1;
-  }
-  if (turnFactor !== 0) {
-    const deltaRotation = new THREE.Quaternion().setFromAxisAngle(
-      new THREE.Vector3(0, 1, 0),
-      turnFactor * turnSpeed * (playerSpeed / maxSpeed)
-    );
+    }
+    if (turnFactor !== 0) {
+        const deltaRotation = new THREE.Quaternion().setFromAxisAngle(
+            new THREE.Vector3(0, 1, 0),
+            turnFactor * turnSpeed * (playerSpeed / maxSpeed)
+        );
     playerCar.quaternion.multiplyQuaternions(
       deltaRotation,
       playerCar.quaternion
     );
-    rotationChanged = true;
-  }
-
-  let positionChanged = false;
-  if (Math.abs(playerSpeed) > 0.001) {
-    const forwardDirection = new THREE.Vector3(0, 0, 1);
-    forwardDirection.applyQuaternion(playerCar.quaternion);
-    const moveDistance = forwardDirection.multiplyScalar(playerSpeed);
-    playerCar.position.add(moveDistance);
-    positionChanged = true;
-  }
-
-  if (playerCar) {
-    const carPos = playerCar.position;
-    const trackData = trackMesh.userData;
-    const trackCurve = trackData.trackCurve;
-
-    let minDist = Infinity;
-    let closestU = 0;
-    for (let i = 0; i <= 100; i++) {
-      const u = i / 100;
-      const point = trackCurve.getPointAt(u);
-      const dist = carPos.distanceTo(point);
-      if (dist < minDist) {
-        minDist = dist;
-        closestU = u;
-      }
+        rotationChanged = true;
     }
 
-    const closestPoint = trackCurve.getPointAt(closestU);
-    const tangent = trackCurve.getTangentAt(closestU).normalize();
-    const toCar = carPos.clone().sub(closestPoint);
-    const alongTangent = toCar.dot(tangent);
+    let positionChanged = false;
+    if (Math.abs(playerSpeed) > 0.001) {
+        const forwardDirection = new THREE.Vector3(0, 0, 1);
+        forwardDirection.applyQuaternion(playerCar.quaternion);
+        const moveDistance = forwardDirection.multiplyScalar(playerSpeed);
+        playerCar.position.add(moveDistance);
+        positionChanged = true;
+    }
+
+    if (playerCar) {
+        const carPos = playerCar.position;
+        const trackData = trackMesh.userData;
+        const trackCurve = trackData.trackCurve;
+
+        let minDist = Infinity;
+        let closestU = 0;
+        for (let i = 0; i <= 100; i++) {
+            const u = i / 100;
+            const point = trackCurve.getPointAt(u);
+            const dist = carPos.distanceTo(point);
+            if (dist < minDist) {
+                minDist = dist;
+                closestU = u;
+            }
+        }
+
+        const closestPoint = trackCurve.getPointAt(closestU);
+        const tangent = trackCurve.getTangentAt(closestU).normalize();
+        const toCar = carPos.clone().sub(closestPoint);
+        const alongTangent = toCar.dot(tangent);
     const perpendicularVector = toCar
       .clone()
       .sub(tangent.clone().multiplyScalar(alongTangent));
-    const distanceFromCenter = perpendicularVector.length();
+        const distanceFromCenter = perpendicularVector.length();
 
     // --- Boundary Check and Correction ---
-    if (distanceFromCenter > trackData.trackWidth / 2) {
-        const snapDirection = perpendicularVector.normalize();
+        if (distanceFromCenter > trackData.trackWidth / 2) {
+            const snapDirection = perpendicularVector.normalize();
         const boundaryPos = closestPoint
             .clone()
             .add(snapDirection.multiplyScalar(trackData.trackWidth / 2));
@@ -1299,11 +1417,11 @@ function handleControls(deltaTime) {
     }
     // --- End Boundary Check ---
 
-    const vectorToCenter = carPos.clone().sub(trackData.finishLineCenter);
-    const side = vectorToCenter.dot(trackData.finishLineTangent);
-    if (playerCar.userData.prevSide !== null) {
-      if (playerCar.userData.prevSide < 0 && side > 0) {
-        playerCar.userData.lapCount++;
+        const vectorToCenter = carPos.clone().sub(trackData.finishLineCenter);
+        const side = vectorToCenter.dot(trackData.finishLineTangent);
+        if (playerCar.userData.prevSide !== null) {
+            if (playerCar.userData.prevSide < 0 && side > 0) {
+                playerCar.userData.lapCount++;
         console.log(
           `Lap completed! Total laps: ${playerCar.userData.lapCount}`
         );
@@ -1311,63 +1429,63 @@ function handleControls(deltaTime) {
           id: myId,
           lapCount: playerCar.userData.lapCount,
         });
-        if (playerCar.userData.lapCount >= 3) {
-          console.log("You win!");
-          showMessage("You win!", 5000);
+                if (playerCar.userData.lapCount >= 3) {
+                    console.log("You win!");
+                    showMessage("You win!", 5000);
           socket.emit("playerWon", { id: myId });
+                }
+            }
         }
-      }
+        playerCar.userData.prevSide = side;
     }
-    playerCar.userData.prevSide = side;
-  }
 
-  const wheelRotationSpeed = playerSpeed * -2.0;
+    const wheelRotationSpeed = playerSpeed * -2.0;
   playerCar.children.forEach((child) => {
     if (child.geometry && child.geometry.type === "CylinderGeometry") {
-      child.rotation.x += wheelRotationSpeed;
-    }
-  });
-  playerCar.userData.speed = playerSpeed;
+            child.rotation.x += wheelRotationSpeed;
+        }
+    });
+    playerCar.userData.speed = playerSpeed;
 
-  if (positionChanged || rotationChanged) {
-    const pos = playerCar.position;
-    const quat = playerCar.quaternion;
-    const updateData = {
-      position: { x: pos.x, y: pos.y, z: pos.z },
+    if (positionChanged || rotationChanged) {
+        const pos = playerCar.position;
+        const quat = playerCar.quaternion;
+        const updateData = {
+            position: { x: pos.x, y: pos.y, z: pos.z },
       rotation: { x: quat.x, y: quat.y, z: quat.z, w: quat.w },
-    };
+        };
     socket.emit("playerUpdate", updateData);
-  }
+    }
 }
 
 // --- HUD Update ---
 function updateHUD() {
-  if (!playerCar) return;
-  const displaySpeed = Math.abs(playerCar.userData.speed * 50).toFixed(0);
-  speedometerElement.textContent = `Speed: ${displaySpeed} km/h`;
-  lapCounterElement.textContent = `Lap: ${playerCar.userData.lapCount} / 3`;
+    if (!playerCar) return;
+    const displaySpeed = Math.abs(playerCar.userData.speed * 50).toFixed(0);
+    speedometerElement.textContent = `Speed: ${displaySpeed} km/h`;
+    lapCounterElement.textContent = `Lap: ${playerCar.userData.lapCount} / 3`;
 }
 
 function updateHUDPosition() {
-  const totalPlayers = (myId ? 1 : 0) + Object.keys(opponentCars).length;
-  const currentPosition = 1;
-  positionElement.textContent = `Position: ${currentPosition} / ${totalPlayers}`;
+    const totalPlayers = (myId ? 1 : 0) + Object.keys(opponentCars).length;
+    const currentPosition = 1;
+    positionElement.textContent = `Position: ${currentPosition} / ${totalPlayers}`;
 }
 
 // --- Utility Functions ---
 let messageTimeout;
 function showMessage(text, duration = 3000, isError = false) {
-  messageElement.textContent = text;
+    messageElement.textContent = text;
   messageElement.style.backgroundColor = isError
     ? "rgba(255, 0, 0, 0.7)"
     : "rgba(0, 150, 50, 0.7)";
   messageElement.classList.remove("hidden");
-  clearTimeout(messageTimeout);
-  if (duration > 0) {
-    messageTimeout = setTimeout(() => {
+    clearTimeout(messageTimeout);
+    if (duration > 0) {
+        messageTimeout = setTimeout(() => {
       messageElement.classList.add("hidden");
-    }, duration);
-  }
+        }, duration);
+    }
 }
 
 // --- Main Game Loop (Animation Loop) ---
@@ -1413,21 +1531,162 @@ function animate() {
 
 // --- Handle Browser Window Resizing ---
 function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
 }
 window.addEventListener("resize", onWindowResize);
 
 // --- Start the Initialization Process ---
 if (typeof THREE !== "undefined" && typeof io !== "undefined") {
-  init();
+    init();
 } else {
-  console.error("Initialization aborted due to missing libraries.");
+    console.error("Initialization aborted due to missing libraries.");
   const loadingElem = document.getElementById("loadingScreen");
-  if (loadingElem) {
+    if (loadingElem) {
     loadingElem.style.display = "flex";
     loadingElem.innerHTML =
       "<h1>Error: Failed to load required libraries! Refresh or check console.</h1>";
   }
 }
+
+// --- Web3 Integration ---
+let web3Instance = null;
+let carNFTContract = null;
+let gameTokenContract = null;
+let raceRegistryContract = null;
+let isWalletConnected = false;
+let playerNFTs = [];
+let playerTokenBalance = '0';
+
+async function loadPlayerNFTs() {
+    try {
+        const accounts = await web3Instance.eth.getAccounts();
+        if (accounts.length === 0) return;
+
+        const balance = await carNFTContract.methods.balanceOf(accounts[0]).call();
+        playerNFTs = [];
+
+        for (let i = 0; i < balance; i++) {
+            const tokenId = await carNFTContract.methods.tokenOfOwnerByIndex(accounts[0], i).call();
+            const tokenURI = await carNFTContract.methods.tokenURI(tokenId).call();
+            const metadata = await fetchIPFSMetadata(tokenURI);
+            playerNFTs.push({
+                tokenId,
+                metadata
+            });
+        }
+
+        updateNFTDisplay();
+    } catch (error) {
+        console.error('Error loading NFTs:', error);
+        showMessage('Failed to load NFTs: ' + error.message, 5000, true);
+    }
+}
+
+async function loadTokenBalance() {
+    try {
+        const accounts = await web3Instance.eth.getAccounts();
+        if (accounts.length === 0) return;
+
+        const balance = await gameTokenContract.methods.balanceOf(accounts[0]).call();
+        playerTokenBalance = web3Instance.utils.fromWei(balance, 'ether');
+        updateTokenBalance();
+    } catch (error) {
+        console.error('Error loading token balance:', error);
+        showMessage('Failed to load token balance: ' + error.message, 5000, true);
+    }
+}
+
+async function submitRaceResult(lapCount, time) {
+    try {
+        if (!isWalletConnected) {
+            throw new Error('Wallet not connected');
+        }
+
+        const accounts = await web3Instance.eth.getAccounts();
+        if (accounts.length === 0) {
+            throw new Error('No accounts found');
+        }
+
+        // Convert time to seconds and create a unique race ID
+        const raceId = web3Instance.utils.soliditySha3(
+            accounts[0],
+            Date.now().toString()
+        );
+
+        // Submit race result
+        await raceRegistryContract.methods.submitRaceResult(
+            raceId,
+            lapCount,
+            Math.floor(time)
+        ).send({ from: accounts[0] });
+
+        showMessage('Race result submitted to blockchain!', 3000);
+    } catch (error) {
+        console.error('Error submitting race result:', error);
+        showMessage('Failed to submit race result: ' + error.message, 5000, true);
+    }
+}
+
+function handleAccountsChanged(accounts) {
+    if (accounts.length === 0) {
+        // User disconnected their wallet
+        isWalletConnected = false;
+        playerNFTs = [];
+        playerTokenBalance = '0';
+        updateWalletUI();
+        showMessage('Wallet disconnected', 3000);
+    } else {
+        // Reload data for the new account
+        loadPlayerNFTs();
+        loadTokenBalance();
+    }
+}
+
+function handleChainChanged() {
+    // Reload the page when the chain changes
+    window.location.reload();
+}
+
+function updateWalletUI() {
+    const connectButton = document.getElementById('connectWallet');
+    const nftDisplay = document.getElementById('nftDisplay');
+    const tokenBalance = document.getElementById('tokenBalance');
+
+    if (isWalletConnected) {
+        connectButton.textContent = 'Wallet Connected';
+        connectButton.disabled = true;
+        nftDisplay.classList.remove('hidden');
+        tokenBalance.classList.remove('hidden');
+    } else {
+        connectButton.textContent = 'Connect Wallet';
+        connectButton.disabled = false;
+        nftDisplay.classList.add('hidden');
+        tokenBalance.classList.add('hidden');
+    }
+}
+
+function updateNFTDisplay() {
+    const nftList = document.getElementById('nftList');
+    nftList.innerHTML = '';
+
+    playerNFTs.forEach(nft => {
+        const nftElement = document.createElement('div');
+        nftElement.className = 'nft-item';
+        nftElement.innerHTML = `
+            <img src="${nft.metadata.image}" alt="${nft.metadata.name}">
+            <p>${nft.metadata.name}</p>
+            <p>Token ID: ${nft.tokenId}</p>
+        `;
+        nftList.appendChild(nftElement);
+    });
+}
+
+function updateTokenBalance() {
+    const tokenBalanceElement = document.getElementById('tokenBalanceAmount');
+    tokenBalanceElement.textContent = `${playerTokenBalance} VEL`;
+}
+
+// Add event listener for wallet connection
+document.getElementById('connectWallet').addEventListener('click', initializeWeb3);
