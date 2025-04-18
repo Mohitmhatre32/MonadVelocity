@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,6 +18,7 @@
     <!-- Compression Library -->
     <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.min.js"></script>
 </head>
+
 <body>
     <div id="loadingScreen">
         <h1>Loading Monad Velocity...</h1>
@@ -27,26 +29,63 @@
     
     <div id="hud">
         <div id="speedometer">Speed: 0 km/h</div>
-        <div id="position">Position: - / -</div>
-        <div id="lapCounter">Lap: 0</div>
-    </div>
-    
-    <div id="message"></div>
-
-    <!-- Web3 UI Elements -->
-    <div id="web3UI">
-        <button id="connectWallet">Connect Wallet</button>
-        <div id="tokenBalance" class="hidden">
-            Balance: <span id="tokenBalanceAmount">0</span> VEL
-        </div>
-        <div id="nftDisplay" class="hidden">
-            <h3>Your Cars</h3>
-            <div id="nftList"></div>
-        </div>
+        <div id="position">Position: 1 / N</div>
+        <div id="lapCounter">Lap: 1 / 3</div>
+        <div id="message" class="hidden"></div>
     </div>
 
-    <!-- Game Scripts -->
-    <script type="module" src="web3.js"></script>
-    <script type="module" src="main.js"></script>
+    <!-- Initial Loading Screen -->
+    <div id="loadingScreen" class="hidden">
+        <h1>Loading Assets...</h1>
+    </div>
+
+    <!-- Room Selection Popup -->
+    <div id="roomSelectionPopup" class="popup">
+        <div class="popup-content">
+            <h2>Welcome to Monad Velocity</h2>
+            <input type="text" id="playerName" placeholder="Enter Your Name" />
+            <button id="createRaceButton">Create New Race</button>
+            <button id="joinRaceButton">Join Existing Race</button>
+        </div>
+    </div>
+
+    <!-- Join Race Popup -->
+    <div id="joinRacePopup" class="popup hidden">
+        <div class="popup-content">
+            <h2>Join Existing Race</h2>
+            <input type="text" id="roomCodeInput" placeholder="Enter Room Code" />
+            <button id="joinButton">Join</button>
+            <div id="joinError"></div>
+        </div>
+    </div>
+
+
+    <!-- Waiting Popup -->
+    <div id="waitingPopup" class="popup hidden">
+        <div class="popup-content">
+            <h2>Room Code: <span id="roomCodeDisplay"></span></h2>
+            <p>Waiting for race to start...</p>
+        </div>
+    </div>
+
+    <!-- Post-Race Completion Popup -->
+    <div id="postRacePopup" class="popup hidden">
+        <div class="popup-content">
+            <h2 id="raceResultTitle">Race Finished!</h2>
+            <p id="raceResultMessage">Congratulations!</p>
+            <button id="newRaceButton">New Race</button>
+        </div>
+    </div>
+
+    <!-- Import Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.136.0/examples/js/loaders/RGBELoader.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.min.js" type="module"></script>
+
+    <!-- Import Game Logic -->
+    <script type="module" src="./main.js"></script>
 </body>
+
 </html>
